@@ -3,7 +3,7 @@ name: Deploy to IIS Server
 on:
   push:
     branches:
-      - main  # Deploy only on main branch push
+      - main  # Trigger deployment on push to main branch
 
 jobs:
   deploy:
@@ -13,16 +13,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Validate GitHub Secrets
+        shell: pwsh
+        run: |
+          if ("${{ secrets.WIN_PASSWORD }}" -eq "") {
+            Write-Error "ERROR: WIN_PASSWORD secret is empty! Set it in GitHub Secrets."
+            exit 1
+          }
+
       - name: Copy files to IIS server
         shell: pwsh
         run: |
           $password = ConvertTo-SecureString "${{ secrets.WIN_PASSWORD }}" -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential ("${{ secrets.WIN_USERNAME }}", $password)
           Invoke-Command -ComputerName "${{ secrets.WIN_SERVER }}" -Credential $credential -ScriptBlock {
-              $sourcePath = "${{ github.workspace }}"  # GitHub workspace folder
+              $sourcePath = "${{ github.workspace }}"
               $destinationPath = "C:\inetpub\wwwroot\myapp"
-              
-              # Copy files to IIS folder
               Copy-Item -Path $sourcePath\* -Destination $destinationPath -Recurse -Force
           }
 

@@ -1,0 +1,32 @@
+name: Deploy to IIS Server
+
+on:
+  push:
+    branches:
+      - main  # Trigger deployment when code is pushed to main
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy files to IIS server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.WIN_SERVER }}
+          username: ${{ secrets.WIN_USERNAME }}
+          password: ${{ secrets.WIN_PASSWORD }}
+          source: "."
+          target: "C:/inetpub/wwwroot/myapp"  # IIS site directory
+
+      - name: Restart IIS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.WIN_SERVER }}
+          username: ${{ secrets.WIN_USERNAME }}
+          password: ${{ secrets.WIN_PASSWORD }}
+          script: |
+            iisreset
